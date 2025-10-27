@@ -9,5 +9,11 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  return <Welcome />;
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold">Welcome to EventPlanner 🎉</h1>
+      <p>Plan, organize, and manage events effortlessly.</p>
+    </div>
+  );
 }
+
