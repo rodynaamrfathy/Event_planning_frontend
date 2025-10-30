@@ -1,19 +1,17 @@
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import EventPlannerLandingPage from "./EventPlannerLandingPage";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "EventPlanner | Organize Your Events Effortlessly" },
+    { name: "description", content: "EventPlanner helps you plan, organize, and manage events effortlessly in one platform." },
   ];
 }
 
 export default function Home() {
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold">Welcome to EventPlanner 🎉</h1>
-      <p>Plan, organize, and manage events effortlessly.</p>
+    <div className="font-inter">
+      <EventPlannerLandingPage />
     </div>
   );
 }
-

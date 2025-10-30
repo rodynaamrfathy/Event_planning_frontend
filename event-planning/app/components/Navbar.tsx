@@ -1,53 +1,45 @@
-import { Link, NavLink } from "react-router";
+import { Link, useLocation } from "react-router";
+import Button from "./button";
 
 export default function Navbar() {
+  const location = useLocation();
+  const isHome = location.pathname === "/";
+
+  const isDashboard = location.pathname === "/dashboard";
+
   return (
-    <nav className="bg-white shadow-md fixed w-full top-0 left-0 z-50">
-      <div className="container mx-auto flex justify-between items-center p-4">
-        {/* Logo navigate ll landing page */}
-        <Link to="/" className="text-2xl font-bold text-blue-600">
-          EventPlanner
-        </Link>
+    <nav className="flex justify-between items-center px-10 py-6 bg-white shadow-md">
+      <Link to="/">
+        <h1 className="text-2xl font-bold text-blue-600">EventPlanner</h1>
+      </Link>
 
-        {/* Navigation Links */}
-        <div className="flex gap-6">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              isActive ? "text-blue-600 font-semibold" : "hover:text-blue-600"
-            }
-          >
-            Home
-          </NavLink>
-
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              isActive ? "text-blue-600 font-semibold" : "hover:text-blue-600"
-            }
-          >
-            Dashboard
-          </NavLink>
-
-          <NavLink
-            to="/login"
-            className={({ isActive }) =>
-              isActive ? "text-blue-600 font-semibold" : "hover:text-blue-600"
-            }
-          >
-            Login
-          </NavLink>
-
-          <NavLink
-            to="/signup"
-            className={({ isActive }) =>
-              isActive ? "text-blue-600 font-semibold" : "hover:text-blue-600"
-            }
-          >
-            Sign Up
-          </NavLink>
+      {/* Show this only on Home */}
+      {isHome && (
+        <div className="space-x-6">
+          <a href="#about" className="hover:text-blue-600">About</a>
+          <a href="#features" className="hover:text-blue-600">Features</a>
+          <a href="#contact" className="hover:text-blue-600">Contact</a>
         </div>
+      )}
+
+      {/*  */}
+      {!isDashboard &&(<div className="space-x-3">
+        <Link to="/login">
+          <Button variant="outline">Login</Button>
+        </Link>
+        <Link to="/signup">
+          <Button className="bg-blue-600 text-white">Sign Up</Button>
+        </Link>
       </div>
+      )}
+
+      {/* On dashboard Logout button */}
+      {isDashboard &&(<div className="space-x-3">
+        <Link to="/">
+          <Button variant="outline">Logout</Button>
+        </Link>
+      </div>
+      )}
     </nav>
   );
 }
