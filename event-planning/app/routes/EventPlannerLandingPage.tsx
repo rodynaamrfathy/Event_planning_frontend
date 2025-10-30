@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "../components/button";
 import { motion } from "framer-motion";
 import { CalendarDays, Users, Sparkles, Phone, Mail } from "lucide-react";
+import { Link } from "react-router";
 
 
 export default function EventPlannerLandingPage() {
@@ -23,16 +24,19 @@ export default function EventPlannerLandingPage() {
             EventPlanner helps you manage events, track invites, and coordinate with ease.
             Whether it’s a wedding, conference, or birthday, we’ve got you covered.
           </p>
-          <Button className="bg-blue-600 text-white text-lg px-6 py-3 rounded-xl">
-            Get Started
-          </Button>
+          <Link to="/signup">
+            <Button className="bg-blue-600 text-white text-lg px-6 py-3 rounded-xl">
+                Get Started
+            </Button>
+          </Link>
         </motion.div>
 
         <motion.img
         src="/images/event-promotion-sale.svg"
         alt="Event Planning Illustration"
-        className="w-full md:w-1/2 mt-10 md:mt-0"
+        className="hidden md:block w-full md:w-1/2 mt-10 md:mt-0"
         />
+
       </section>
 
       {/* Features */}
