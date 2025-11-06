@@ -7,24 +7,31 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+    const handleLogin = async (e) => {
+        e.preventDefault();
 
-    try {
-      const res = await axios.post("http://localhost:5001/api/v1/auth/sign-in", {
-        email,
-        password,
-      });
+        try {
+            const res = await axios.post("http://localhost:5001/api/v1/auth/sign-in", {
+                email,
+                password,
+            });
 
-      localStorage.setItem("token", res.data.data.token);
-      alert("✅ Login successful!");
-      navigate("/dashboard");
-    }  catch (err) {
-        console.error(err);
-        alert("❌ Login failed");
-    }
+            if (res.data?.success) {
+                alert(`✅ ${res.data.message}`);
+                localStorage.setItem("token", res.data.data.token);
+                navigate("/dashboard");
+            } else {
+                alert(`❌ ${res.data.message}`);
+            }
+        } catch (err) {
+            const msg =
+                err.response?.data?.message ||
+                "Something went wrong. Please try again.";
 
-  };
+            alert(`❌ ${msg}`);
+        }
+    };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">

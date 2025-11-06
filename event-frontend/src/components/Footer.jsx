@@ -5,7 +5,7 @@ export default function Footer() {
         © {new Date().getFullYear()} EventPlanner. All rights reserved.
       </p>
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        Built by <strong>Rodyna Amr Fathy</strong>
+        Built by <strong>Tools 3 Team</strong>
       </p>
     </footer>
   );
