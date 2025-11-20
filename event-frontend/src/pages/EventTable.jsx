@@ -1,4 +1,5 @@
 import React from 'react';
+import {useNavigate} from "react-router-dom";
 
 const getStatusClasses = (status) => {
     switch (status) {
@@ -14,6 +15,12 @@ const getStatusClasses = (status) => {
 };
 
 const EventTable = ({ data }) => {
+    const navigate = useNavigate();
+
+    const handleViewDetails = (eventId) => {
+        navigate(`/events/${eventId}`);
+    };
+
     return (
         <div className="overflow-hidden border border-gray-200 rounded-lg shadow-md dark:border-gray-700">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -51,7 +58,10 @@ const EventTable = ({ data }) => {
                 {/* Table Body */}
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
                 {data.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-150">
+                    <tr key={index}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-150"
+                        onClick={() => handleViewDetails(item.event.replace(/\s+/g, ''))} // Using the event name as a simple "ID"
+                        >
 
                         {/* Event Cell */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
