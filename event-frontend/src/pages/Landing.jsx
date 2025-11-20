@@ -7,13 +7,13 @@ export default function Landing() {
         <div className="flex flex-col min-h-screen
           bg-white dark:bg-gray-950
           text-gray-800 dark:text-gray-100">
-            {/* Hero - MODIFIED */}
-            <section className="flex flex-row items-center justify-between px-10 py-20 overflow-hidden">
+            {/* Hero */}
+            <section className="flex flex-col md:flex-row items-center justify-between px-6 md:px-10 py-16 md:py-28">
 
                 {/* Left Text */}
                 <motion.div
-                    // Reduced max-width for better side-by-side fit on smaller screens
-                    className="max-w-md w-full"
+                    // Removed max-w-full. max-w-lg will apply from md:
+                    className="md:max-w-lg text-center md:text-left" // Updated for mobile centering
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
@@ -21,7 +21,7 @@ export default function Landing() {
                     <h2 className="text-4xl sm:text-5xl font-bold mb-4">
                         Plan, Organize & Celebrate Effortlessly 🎉
                     </h2>
-                    <p className="text-lg mb-6 text-gray-700 dark:text-gray-300">
+                    <p className="text-base sm:text-lg mb-6 text-gray-700 dark:text-gray-300">
                         Manage events, track invites, and coordinate with ease.
                     </p>
 
@@ -32,12 +32,12 @@ export default function Landing() {
                     </Link>
                 </motion.div>
 
-                {/* Hero Image - MODIFIED */}
+                {/* Hero Image - Corrected behavior */}
                 <motion.img
-                    src="/images/event_11227175.png"
-                    // Ensures it doesn't take up too much space on small screens
-                    // and stays on the right.
-                    className="w-1/2 max-w-xs sm:max-w-sm ml-4 lg:max-w-md"
+                    src="/images/event-promotion-sale.svg"
+                    // hidden on small screens, block (visible) on medium screens and up
+                    // Takes half width on medium screens, no top margin when next to text
+                    className="hidden md:block w-full md:w-1/2 mt-10 md:mt-0"
                     initial={{ opacity: 0, x: 60 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, delay: 0.2 }}

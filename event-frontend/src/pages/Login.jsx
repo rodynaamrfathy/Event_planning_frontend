@@ -1,12 +1,18 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import {isAuthenticated} from "../utils/auth.js";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+    useEffect(() => {
+        if (isAuthenticated()) {
+            navigate("/dashboard");
+        }
+    }, [navigate]);
     const handleLogin = async (e) => {
         e.preventDefault();
 
