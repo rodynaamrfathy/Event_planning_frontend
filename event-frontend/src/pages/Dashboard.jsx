@@ -22,19 +22,27 @@ export default function Dashboard() {
 
     // Function to navigate to the full events page
     const handleSeeMore = () => {
-        // You'll need a route defined for this, e.g., /events/all
         navigate("/events/all");
+    };
+
+    const handleCreateEvent = () => {
+        navigate("/eventcreate");
     };
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-10">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-                Welcome to your Dashboard
-            </h1>
+            <div className="flex justify-between items-center mb-6">
+                {/* Heading */}
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+                    Dashboard
+                </h1>
 
-            <p className="text-gray-700 dark:text-gray-300 mb-6">
-                This is your main dashboard. Add your events, see analytics, and manage your account.
-            </p>
+                {/* Button */}
+                <button onClick={handleCreateEvent}
+                        className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
+                    + New Event
+                </button>
+            </div>
 
             {/* ---  events Section --- */}
             <div className="mb-8">
