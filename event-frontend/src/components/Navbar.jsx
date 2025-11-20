@@ -10,16 +10,23 @@ export default function Navbar() {
 
     const [isDark, setIsDark] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [userName, setUserName] = useState("");
 
-    // Load theme + login state
+    // Load theme + login state + username
     useEffect(() => {
         const root = document.documentElement;
         const storedTheme = localStorage.getItem("theme");
         if (storedTheme === "dark") root.classList.add("dark");
         setIsDark(root.classList.contains("dark"));
 
-        // ✅ Check if user is logged in
-        setIsLoggedIn(!!localStorage.getItem("token"));
+        const token = localStorage.getItem("token");
+        setIsLoggedIn(!!token);
+
+        //  Load username if logged in
+        if (token) {
+            const name = localStorage.getItem("userName") || "User";
+            setUserName(name);
+        }
     }, [location.pathname]);
 
     const toggleTheme = () => {
@@ -32,10 +39,11 @@ export default function Navbar() {
 
     const handleLogout = () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("userName"); //  remove username too
         setIsLoggedIn(false);
-        navigate("/"); // ✅ redirect to landing page
+        setUserName(""); // reset
+        navigate("/");
     };
-
 
     return (
         <nav className="fixed top-0 left-0 w-full flex justify-between items-center px-10 py-6 bg-white dark:bg-gray-900 shadow-md z-50">
@@ -47,15 +55,22 @@ export default function Navbar() {
 
             {isHome && (
                 <div className="space-x-6">
-                    <a href="#about" className="hover:text-blue-600 dark:hover:text-blue-400 text-gray-800 dark:text-gray-100">About</a>
-                    <a href="#features" className="hover:text-blue-600 dark:hover:text-blue-400 text-gray-800 dark:text-gray-100">Features</a>
-                    <a href="#contact" className="hover:text-blue-600 dark:hover:text-blue-400 text-gray-800 dark:text-gray-100">Contact</a>
+                    <a href="#about" className="hover:text-blue-600 dark:hover:text-blue-400">About</a>
+                    <a href="#features" className="hover:text-blue-600 dark:hover:text-blue-400">Features</a>
+                    <a href="#contact" className="hover:text-blue-600 dark:hover:text-blue-400">Contact</a>
                 </div>
             )}
 
             <div className="space-x-3 flex items-center">
 
-                {/* ✅ Show Login / Signup ONLY when user is NOT logged in */}
+                {/*  Show username when logged in */}
+                {isLoggedIn && (
+                    <span className="mr-3 font-semibold text-gray-800 dark:text-gray-100">
+                        Hi, {userName} 👋
+                    </span>
+                )}
+
+                {/*  Logged OUT → Show Login / Signup */}
                 {!isLoggedIn && (
                     <>
                         <Link to="/login">
@@ -64,12 +79,14 @@ export default function Navbar() {
                             </Button>
                         </Link>
                         <Link to="/signup">
-                            <Button className="bg-blue-600 text-white">Sign Up</Button>
+                            <Button className="bg-blue-600 text-white">
+                                Sign Up
+                            </Button>
                         </Link>
                     </>
                 )}
 
-                {/* ✅ Show Logout when user IS logged in */}
+                {/*  Logged IN → Show Logout */}
                 {isLoggedIn && (
                     <Button
                         onClick={handleLogout}
@@ -79,10 +96,10 @@ export default function Navbar() {
                     </Button>
                 )}
 
-                {/* ✅ Theme toggle */}
+                {/* Theme toggle */}
                 <button
                     onClick={toggleTheme}
-                    className="ml-3 h-9 w-9 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-700"
+                    className="ml-3 h-9 w-9 inline-flex items-center justify-center rounded-md border dark:border-gray-700"
                 >
                     {isDark ? "☀️" : "🌙"}
                 </button>

@@ -29,6 +29,7 @@ export default function Signup() {
             if (res.data?.success) {
                 alert(`✅ ${res.data.message}`);
                 localStorage.setItem("token", res.data.data.token);
+                localStorage.setItem("userName", res.data.data?.user?.name || "");
                 navigate("/dashboard");
             }
             else {
