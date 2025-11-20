@@ -2,16 +2,20 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import EventTable from './EventTable';
-import { eventData } from "../assets/fakedata"; // Adjust path as needed
+import {eventData, inviteData, upcomingEventData} from "../assets/fakedata";
+import { actionsTableData } from "../assets/fakedata";
+import ActionsTable from "./ActionsTable.jsx";
+import InviteCard from "./InviteCard.jsx";
+import EventCardList from "./EventCardList.jsx";
 
 export default function Dashboard() {
     const navigate = useNavigate();
 
-    // 🔐 Auth check logic
+    // Auth check logic
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) navigate("/login");
-    }, [navigate]); // Added 'navigate' to dependency array for best practice
+    }, [navigate]);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-10">
@@ -31,26 +35,31 @@ export default function Dashboard() {
                 <EventTable data={eventData} />
             </div>
 
-            {/* --- Other Dashboard Sections --- */}
-            <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4 text-left">
+            {/* --- Upcoming Events Section (Card List) --- */}
+            <div className="mb-10">
+                <h2 className="text-2xl font-semibold mb-6 text-left text-gray-800 dark:text-gray-100">
                     Upcoming Events
                 </h2>
-                {/* Content for Upcoming events */}
+                {/* Render the new EventCardList component */}
+                <EventCardList data={upcomingEventData} />
             </div>
 
             <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4 text-left">
-                    Invites
-                </h2>
                 {/* Content for Invites */}
+                <div className="mb-10">
+                    <h2 className="text-2xl font-semibold mb-4 text-left text-gray-800 dark:text-gray-100">
+                        Invites
+                    </h2>
+                    {/* Render the InviteCard component here */}
+                    <InviteCard data={inviteData} />
+                </div>
             </div>
 
-            <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4 text-left">
-                    Organized by You
+            <div className="mb-10">
+                <h2 className="text-2xl font-semibold mb-4 text-left text-gray-800 dark:text-gray-100">
+                    Events Organized by You
                 </h2>
-                {/* Content for Organized by You */}
+                <ActionsTable data={actionsTableData} />
             </div>
         </div>
     );
