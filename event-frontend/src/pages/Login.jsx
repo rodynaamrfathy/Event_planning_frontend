@@ -1,30 +1,44 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import {isAuthenticated} from "../utils/auth.js";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+    useEffect(() => {
+        if (isAuthenticated()) {
+            navigate("/dashboard");
+        }
+    }, [navigate]);
+    const handleLogin = async (e) => {
+        e.preventDefault();
 
-    try {
-      const res = await axios.post("http://localhost:5001/api/v1/auth/sign-in", {
-        email,
-        password,
-      });
+        try {
+            const res = await axios.post("http://localhost:3000/api/v1/auth/sign-in", {
+                email,
+                password,
+            });
 
-      localStorage.setItem("token", res.data.data.token);
-      alert("✅ Login successful!");
-      navigate("/dashboard");
-    }  catch (err) {
-        console.error(err);
-        alert("❌ Login failed");
-    }
+            if (res.data?.success) {
+                alert(`✅ ${res.data.message}`);
+                localStorage.setItem("token", res.data.data.token);
+                localStorage.setItem("userName", res.data.data?.user?.name || "");
+                navigate("/dashboard");
+            } else {
+                alert(`❌ ${res.data.message}`);
+            }
+        } catch (err) {
+            const msg =
+                err.response?.data?.message ||
+                "Something went wrong. Please try again.";
 
-  };
+            alert(`❌ ${msg}`);
+        }
+    };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">

@@ -6,6 +6,11 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import "./App.css"
+import EventDetailsPage from "./pages/ViewEvent.jsx";
+import AllEventsPage from "./pages/AllEventsPage.jsx";
+import EventCreatePage from "./pages/EventCreatePage.jsx";
+import EditEventPage from "./pages/EditEventPage.jsx";
 
 export default function App() {
   return (
@@ -18,6 +23,10 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/events/:id" element={<EventDetailsPage />} />
+          <Route path="/events/edit/:id" element={<EditEventPage />} />
+          <Route path="/events/all" element={<AllEventsPage />} />
+          <Route path="/eventcreate" element={<EventCreatePage />} />
         </Routes>
       </div>
 
