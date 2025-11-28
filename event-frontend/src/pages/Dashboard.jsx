@@ -1,12 +1,18 @@
 // Dashboard.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EventTable from './EventTable';
-import {eventData, inviteData, detailedEvents} from "../assets/fakedata";
-import { actionsTableData } from "../assets/fakedata";
 import ActionsTable from "./ActionsTable.jsx";
 import InviteCard from "./InviteCard.jsx";
 import EventCardList from "./EventCardList.jsx";
+import {
+    fetchOrganizedEvents,
+    fetchUserRegistrations,
+    fetchUserInvitations,
+    searchEvents,
+    respondToEvent as respondToEventApi,
+    respondToInvitation as respondToInvitationApi,
+} from "../services/eventService.js";
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -17,8 +23,144 @@ export default function Dashboard() {
         if (!token) navigate("/login");
     }, [navigate]);
 
-    // 💡 Slice the array to get only the first 2 events for the dashboard snippet
-    const eventsSnippet = detailedEvents.slice(0, 2);
+    const [registrations, setRegistrations] = useState([]);
+    const [organizedEvents, setOrganizedEvents] = useState([]);
+    const [upcomingEvents, setUpcomingEvents] = useState([]);
+    const [invitations, setInvitations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Format helpers
+    const formatDate = (dateString) => {
+        if (!dateString) return "—";
+        return new Date(dateString).toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+        });
+    };
+
+    const normalizeStatus = (status) => {
+        if (!status) return "maybe";
+        const normalized = status.replace(/\s/gi, "").toLowerCase();
+        if (normalized === "notgoing") return "not going";
+        return normalized;
+    };
+
+    const apiStatusFromUi = (status) => {
+        switch (status) {
+            case "going":
+                return "Going";
+            case "maybe":
+                return "Maybe";
+            case "not going":
+                return "NotGoing";
+            default:
+                return "Maybe";
+        }
+    };
+
+    useEffect(() => {
+        const loadDashboard = async () => {
+            try {
+                setLoading(true);
+                const [
+                    registrationsRes,
+                    organizedRes,
+                    invitationsRes,
+                    searchRes,
+                ] = await Promise.all([
+                    fetchUserRegistrations(),
+                    fetchOrganizedEvents(),
+                    fetchUserInvitations(),
+                    searchEvents(),
+                ]);
+
+                setRegistrations(
+                    registrationsRes.map((registration) => ({
+                        registrationId: registration.registrationId,
+                        eventId: registration.event?.eventId ?? registration.eventId,
+                        event: registration.event?.title ?? "Untitled Event",
+                        date: formatDate(registration.event?.eventDate),
+                        time: "—",
+                        status: normalizeStatus(registration.responseStatus ?? "Maybe"),
+                    }))
+                );
+
+                setOrganizedEvents(
+                    organizedRes.map((event) => ({
+                        id: event.eventId,
+                        event: event.title,
+                        date: formatDate(event.eventDate),
+                        time: "—",
+                        status: "Active",
+                    }))
+                );
+
+                setInvitations(
+                    invitationsRes.map((invite) => ({
+                        id: invite.invitationId,
+                        senderName: invite.sender?.name ?? "Organizer",
+                        eventName: invite.event?.title ?? "Event",
+                        eventDate: formatDate(invite.event?.eventDate),
+                        status: invite.status,
+                    }))
+                );
+
+                const events = searchRes?.events ?? [];
+                setUpcomingEvents(events.slice(0, 4).map((event) => ({
+                    id: event.eventId,
+                    eventId: event.eventId,
+                    title: event.title,
+                    description: event.description ?? "No description provided.",
+                    category: event.category ?? "Event",
+                    location: event.location ?? "TBD",
+                    date: formatDate(event.eventDate),
+                })));
+                setError(null);
+            } catch (err) {
+                const message =
+                    err.response?.data?.message || "Unable to load dashboard data.";
+                setError(message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+        loadDashboard();
+    }, [navigate]);
+
+    const handleStatusUpdate = async (item, nextStatus) => {
+        const apiStatus = apiStatusFromUi(nextStatus);
+        try {
+            await respondToEventApi(item.eventId, apiStatus);
+            setRegistrations((prev) =>
+                prev.map((registration) =>
+                    registration.eventId === item.eventId
+                        ? { ...registration, status: nextStatus }
+                        : registration
+                )
+            );
+        } catch (err) {
+            alert(err.response?.data?.message || "Failed to update status.");
+        }
+    };
+
+    const handleInvitationResponse = async (invitationId, status) => {
+        try {
+            await respondToInvitationApi(invitationId, status);
+            setInvitations((prev) =>
+                prev.filter((invite) => invite.id !== invitationId)
+            );
+        } catch (err) {
+            alert(err.response?.data?.message || "Unable to update invitation.");
+        }
+    };
 
     // Function to navigate to the full events page
     const handleSeeMore = () => {
@@ -49,7 +191,10 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-semibold mb-4 text-left text-gray-800 dark:text-gray-100">
                     Your Events
                 </h2>
-                <EventTable data={eventData} />
+                {error && (
+                    <p className="text-sm text-red-500 mb-4">{error}</p>
+                )}
+                <EventTable data={registrations} onStatusChange={handleStatusUpdate} loading={loading} />
             </div>
 
             {/* --- Upcoming Events Section (Card List) --- */}
@@ -57,8 +202,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-semibold mb-6 text-left text-gray-800 dark:text-gray-100">
                     Upcoming Events
                 </h2>
-                {/* 1. Pass the sliced array (only 2 events) */}
-                <EventCardList data={eventsSnippet} />
+                <EventCardList data={upcomingEvents} isLoading={loading} />
 
                 {/* 2. Add the "See More" button */}
                 <div className="text-center mt-6">
@@ -78,7 +222,7 @@ export default function Dashboard() {
                         Invites
                     </h2>
                     {/* Render the InviteCard component here */}
-                    <InviteCard data={inviteData} />
+                    <InviteCard data={invitations} onRespond={handleInvitationResponse} />
                 </div>
             </div>
 
@@ -86,7 +230,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-semibold mb-4 text-left text-gray-800 dark:text-gray-100">
                     Events Organized by You
                 </h2>
-                <ActionsTable data={actionsTableData} />
+                <ActionsTable data={organizedEvents} />
             </div>
         </div>
     );

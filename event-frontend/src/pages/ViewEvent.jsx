@@ -1,40 +1,75 @@
-// EventDetailsPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { detailedEvents } from "../assets/fakedata";
-
-// Function to simulate fetching data (will be replaced by an API call later)
-const fetchEventDetailsById = (eventId) => {
-    // In a real app, this would be an async API call: GET /api/events/{eventId}
-    return detailedEvents.find(event => event.id === eventId);
-};
+import { fetchEventById, respondToEvent } from "../services/eventService.js";
 
 const EventDetailsPage = () => {
-    // 1. Extract the 'id' parameter from the URL (e.g., from /events/tech-meetup)
     const { id } = useParams();
-
-    // 2. Use state to hold the event data
     const [event, setEvent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isRsvping, setIsRsvping] = useState(false);
 
-    // 3. Use useEffect to fetch data when the component mounts or the ID changes
     useEffect(() => {
-        // In a real app, you would handle loading state and errors here
-        const data = fetchEventDetailsById(id);
-        setEvent(data);
-    }, [id]); // Re-run effect if the ID changes
+        const loadEvent = async () => {
+            if (!id) return;
+            try {
+                setLoading(true);
+                const data = await fetchEventById(id);
+                setEvent(data);
+                setError(null);
+            } catch (err) {
+                const message = err.response?.data?.message || "Event not found.";
+                setError(message);
+                setEvent(null);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    if (!event) {
-        // Handle loading or not found state
+        loadEvent();
+    }, [id]);
+
+    const handleRsvp = async () => {
+        if (!event?.eventId || isRsvping) return;
+        try {
+            setIsRsvping(true);
+            await respondToEvent(event.eventId, "Going");
+            alert("Your RSVP has been recorded as 'Going'.");
+        } catch (err) {
+            const message = err.response?.data?.message || "Unable to submit RSVP.";
+            alert(message);
+        } finally {
+            setIsRsvping(false);
+        }
+    };
+
+    if (loading) {
         return (
             <div className="min-h-screen bg-white dark:bg-gray-950 p-10 text-center text-gray-500">
-                {event === null ? 'Loading event details...' : 'Event not found.'}
+                Loading event details...
             </div>
         );
     }
 
-    // --- Content Rendering (Matches your design) ---
+    if (error || !event) {
+        return (
+            <div className="min-h-screen bg-white dark:bg-gray-950 p-10 text-center text-red-500">
+                {error || "Event not found."}
+            </div>
+        );
+    }
+
+    const formattedDate = event.eventDate
+        ? new Date(event.eventDate).toLocaleDateString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+        })
+        : "Date TBD";
+
     return (
-        <div className="min-h-screen bg-white dark:bg-gray-950 p-6 md:p-10">
+            <div className="min-h-screen bg-white dark:bg-gray-950 p-6 md:p-10">
             <div className="max-w-4xl mx-auto">
 
                 {/* --- Header Section (Title and Host) --- */}
@@ -42,7 +77,7 @@ const EventDetailsPage = () => {
                     {event.title}
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-                    Hosted by **{event.hostedBy}**
+                    Hosted by {event.organizer?.name || "Organizer"}
                 </p>
 
                 {/* --- Details Header --- */}
@@ -56,10 +91,10 @@ const EventDetailsPage = () => {
                     {/* Date & Time Block */}
                     <div>
                         <p className="text-sm font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
-                            Date & Time
+                            Date
                         </p>
                         <p className="text-lg text-gray-800 dark:text-gray-200">
-                            {event.date}, {event.timeRange}
+                            {formattedDate}
                         </p>
                     </div>
 
@@ -69,7 +104,7 @@ const EventDetailsPage = () => {
                             Location
                         </p>
                         <p className="text-lg text-gray-800 dark:text-gray-200">
-                            {event.location}
+                            {event.location || "Location TBD"}
                         </p>
                     </div>
                 </div>
@@ -80,13 +115,17 @@ const EventDetailsPage = () => {
                         Description
                     </p>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {event.description}
+                        {event.description || "No description available for this event yet."}
                     </p>
                 </div>
 
                 <div className="mt-10">
-                    <button className="px-6 py-3 text-lg font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-lg">
-                        RSVP / Join Event
+                    <button
+                        onClick={handleRsvp}
+                        disabled={isRsvping}
+                        className="px-6 py-3 text-lg font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition duration-150 shadow-lg"
+                    >
+                        {isRsvping ? "Submitting RSVP..." : "RSVP / Join Event"}
                     </button>
                 </div>
             </div>

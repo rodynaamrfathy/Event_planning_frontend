@@ -1,20 +1,17 @@
 import React from 'react';
 
-const InviteCard = ({ data }) => {
-
-    //  Placeholder functions for API integration
-    const handleAccept = (inviteId) => {
-        alert(`Accepted invitation ID: ${inviteId}`);
-        // API CALL: PUT /api/invites/{inviteId} with status: accepted
-    };
-
-    const handleDecline = (inviteId) => {
-        alert(`Declined invitation ID: ${inviteId}`);
-        // API CALL: PUT /api/invites/{inviteId} with status: declined
+const InviteCard = ({ data = [], onRespond }) => {
+    const handleResponse = (inviteId, status) => {
+        onRespond?.(inviteId, status);
     };
 
     return (
         <div className="space-y-4">
+            {data.length === 0 && (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-6">
+                    No invitations waiting for you right now.
+                </p>
+            )}
             {data.map((invite) => (
                 <div
                     key={invite.id}
@@ -34,11 +31,16 @@ const InviteCard = ({ data }) => {
                         {/* Text Content */}
                         <div>
                             <p className="text-gray-900 dark:text-gray-100 font-medium">
-                                From **{invite.senderName}**
+                                From {invite.senderName}
                             </p>
                             <p className="text-sm text-indigo-600 dark:text-indigo-400">
                                 {invite.eventName}
                             </p>
+                            {invite.eventDate && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Happening {invite.eventDate}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -46,7 +48,7 @@ const InviteCard = ({ data }) => {
                     <div className="flex space-x-2">
                         {/* Accept Button */}
                         <button
-                            onClick={() => handleAccept(invite.id)}
+                            onClick={() => handleResponse(invite.id, "Accepted")}
                             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-150"
                         >
                             Accept
@@ -54,8 +56,8 @@ const InviteCard = ({ data }) => {
 
                         {/* Decline Button (Lighter/Subtle style) */}
                         <button
-                            onClick={() => handleDecline(invite.id)}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-150"
+                            onClick={() => handleResponse(invite.id, "Rejected")}
+                            className="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-150"
                         >
                             Decline
                         </button>

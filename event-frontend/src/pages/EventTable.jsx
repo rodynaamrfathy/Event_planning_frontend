@@ -19,7 +19,7 @@ const getStatusClasses = (status) => {
     }
 };
 
-const EventTable = ({ data }) => {
+const EventTable = ({ data = [], onStatusChange, loading = false }) => {
     const navigate = useNavigate();
 
     const handleViewDetails = (eventId) => {
@@ -31,28 +31,7 @@ const EventTable = ({ data }) => {
         e.stopPropagation();
 
         const newStatus = e.target.value;
-        const eventId = item.event.replace(/\s+/g, ''); // Or use item.id if available
-
-        console.log(`Updating event ${eventId} status to: ${newStatus}`);
-
-        // TO IMPLEMENT:
-        /* fetch(`/api/events/${eventId}/status`, {
-            method: 'POST', // or PUT
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus })
-        })
-        .then(response => {
-            if (response.ok) {
-                // 1. Update the local state in the parent component (Dashboard)
-                //    to reflect the change, refreshing the table.
-                console.log('DB update successful.');
-            } else {
-                console.error('Failed to update status.');
-            }
-        });
-        */
-
-        // For now, only the visual status will change on selection.
+        onStatusChange?.(item, newStatus);
     };
 
     return (
@@ -71,11 +50,25 @@ const EventTable = ({ data }) => {
 
                 {/* Table Body */}
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                {data.map((item, index) => (
-                    <tr key={index}
+                {loading && (
+                    <tr>
+                        <td colSpan="4" className="px-6 py-6 text-center text-gray-500 dark:text-gray-400">
+                            Loading your events...
+                        </td>
+                    </tr>
+                )}
+                {!loading && data.length === 0 && (
+                    <tr>
+                        <td colSpan="4" className="px-6 py-6 text-center text-gray-500 dark:text-gray-400">
+                            No events to show yet.
+                        </td>
+                    </tr>
+                )}
+                {!loading && data.map((item) => (
+                    <tr key={item.eventId ?? item.event}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-150 cursor-pointer"
                         // Handle View Details on Row Click
-                        onClick={() => handleViewDetails(item.event.replace(/\s+/g, ''))}
+                        onClick={() => handleViewDetails(item.eventId || item.event?.replace(/\s+/g, ''))}
                     >
 
                         {/* Event Cell */}
@@ -98,6 +91,7 @@ const EventTable = ({ data }) => {
                             <select
                                 value={item.status} // Controlled component based on current data status
                                 onChange={(e) => handleStatusUpdate(e, item)}
+                                disabled={loading}
                                 // Styling the select element to look like a pill/button
                                 className={`
                                     appearance-none py-1.5 px-3 rounded-full text-xs font-semibold 

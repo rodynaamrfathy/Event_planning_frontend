@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EVENT_CATEGORIES, FILTERABLE_CATEGORIES } from '../constants/EventCategories';
-
-const getCurrentUserId = () => {
-    // decode the JWT token or read from an auth context.
-    // For now, we use a placeholder ID string.
-    return "user-id-007";
-};
+import { createEvent, inviteUserToEvent } from "../services/eventService.js";
 
 export default function EventCreatePage() {
     const navigate = useNavigate();
-    const currentUserId = getCurrentUserId(); // Get the ID once
+    const currentUserName = localStorage.getItem("userName") || "You";
 
     const [formData, setFormData] = useState({
         title: '',
@@ -18,7 +13,7 @@ export default function EventCreatePage() {
         dateTime: '',
         location: '',
         guests: '',
-        hostedBy: currentUserId,
+        hostedBy: currentUserName,
         category: EVENT_CATEGORIES.SOCIAL,
     });
 
@@ -40,7 +35,7 @@ export default function EventCreatePage() {
     };
 
     // Handler for the Save action
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
 
         if (!formData.title || !formData.dateTime || !formData.location) {
@@ -54,19 +49,48 @@ export default function EventCreatePage() {
         const readableDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const readableTime = formatTime(timePart);
 
-        const newEvent = {
-            id: 'new-' + Date.now(),
-            title: formData.title,
-            hostedBy: formData.hostedBy,
-            date: readableDate,
-            timeRange: readableTime,
-            location: formData.location,
-            description: formData.description,
-            category: formData.category,
-        };
+        try {
+            const payload = {
+                title: formData.title,
+                eventDate: formData.dateTime,
+                location: formData.location,
+                description: formData.description,
+            };
 
-        console.log('New Event Data Ready for API Call:', newEvent);
-        navigate('/dashboard');
+            const response = await createEvent(payload);
+            const createdEvent = response?.event;
+
+            // If guests were provided, send invitations.
+            // Expecting a comma-separated list of numeric user IDs for now, e.g. "1, 2, 3".
+            if (createdEvent?.eventId && formData.guests.trim()) {
+                const raw = formData.guests.split(",");
+                const ids = raw
+                    .map((token) => token.trim())
+                    .filter((token) => token.length > 0)
+                    .map((token) => Number(token))
+                    .filter((id) => Number.isFinite(id) && id > 0);
+
+                // Fire invitations sequentially; errors are surfaced via alert but don't block navigation.
+                for (const recipientId of ids) {
+                    try {
+                        await inviteUserToEvent(createdEvent.eventId, recipientId, "attendee");
+                    } catch (inviteError) {
+                        // Optional: log but keep going for other guests
+                        console.error("Failed to invite guest", recipientId, inviteError);
+                    }
+                }
+            }
+
+            if (createdEvent?.eventId) {
+                navigate(`/events/${createdEvent.eventId}`);
+            } else {
+                navigate('/dashboard');
+            }
+        } catch (error) {
+            const message =
+                error.response?.data?.message || "Failed to create event. Please try again.";
+            alert(message);
+        }
     };
 
     // Handler for the Cancel action
@@ -165,10 +189,12 @@ export default function EventCreatePage() {
                     </div>
 
                     <div>
-                        <label htmlFor="guests" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add Guests</label>
+                        <label htmlFor="guests" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Add Guests (user IDs, comma separated)
+                        </label>
                         <input
                             type="text" name="guests" id="guests" value={formData.guests} onChange={handleChange}
-                            placeholder="Search by email"
+                            placeholder="e.g. 12, 34, 56"
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
                         />
                     </div>

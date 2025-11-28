@@ -19,7 +19,7 @@ export default function Signup() {
         e.preventDefault();
 
         try {
-            const res = await axios.post("http://localhost:5001/api/v1/auth/sign-up", {
+            const res = await axios.post("http://localhost:3000/api/v1/auth/sign-up", {
                 name,
                 email,
                 password,
