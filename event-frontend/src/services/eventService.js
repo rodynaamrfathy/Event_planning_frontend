@@ -64,3 +64,8 @@ export const deleteEvent = async (eventId) => {
     return data;
 };
 
+export const updateEvent = async (eventId, payload) => {
+    const { data } = await apiClient.put(`/events/${eventId}`, payload);
+    return data;
+};
+

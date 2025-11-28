@@ -1,31 +1,44 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { deleteEvent } from '../services/eventService.js';
 
 // Helper function for status classes
 const getStatusClasses = (status) => {
     switch (status.toLowerCase()) { // Ensure case-insensitivity
         case 'active':
-            return 'bg-green-100 text-green-700';
+            return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
         case 'pending':
-            return 'bg-yellow-100 text-yellow-700';
+            return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300';
         case 'inactive':
-            return 'bg-red-100 text-red-700';
+            return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
         default:
-            return 'bg-gray-100 text-gray-700';
+            return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
     }
 };
 
-const ActionsTable = ({ data }) => {
-    // These functions would typically interact with your backend
+const ActionsTable = ({ data, onDelete }) => {
+    const navigate = useNavigate();
+
     const handleEdit = (id) => {
-        alert(`Editing event with ID: ${id}`);
-        // Implement navigation to edit page or open a modal
-        // Example: navigate(`/events/edit/${id}`);
+        navigate(`/events/edit/${id}`);
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm(`Are you sure you want to delete event with ID: ${id}?`)) {
-            alert(`Deleting event with ID: ${id}`);
-            // Implement API call to delete the event, then update state
+    const handleDelete = async (id) => {
+        if (!window.confirm(`Are you sure you want to delete this event? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await deleteEvent(id);
+            if (onDelete) {
+                onDelete(id);
+            } else {
+                // Reload the page if no callback provided
+                window.location.reload();
+            }
+        } catch (error) {
+            const message = error.response?.data?.message || "Failed to delete event.";
+            alert(message);
         }
     };
 

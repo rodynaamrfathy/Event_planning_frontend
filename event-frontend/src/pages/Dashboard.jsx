@@ -9,6 +9,7 @@ import {
     fetchOrganizedEvents,
     fetchUserRegistrations,
     fetchUserInvitations,
+    fetchInvitedEvents,
     searchEvents,
     respondToEvent as respondToEventApi,
     respondToInvitation as respondToInvitationApi,
@@ -29,6 +30,7 @@ export default function Dashboard() {
     const [invitations, setInvitations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [respondingInvitationId, setRespondingInvitationId] = useState(null);
 
     // Format helpers
     const formatDate = (dateString) => {
@@ -97,14 +99,18 @@ export default function Dashboard() {
                     }))
                 );
 
+                // Filter to only show pending invitations and ensure eventId is present
                 setInvitations(
-                    invitationsRes.map((invite) => ({
-                        id: invite.invitationId,
-                        senderName: invite.sender?.name ?? "Organizer",
-                        eventName: invite.event?.title ?? "Event",
-                        eventDate: formatDate(invite.event?.eventDate),
-                        status: invite.status,
-                    }))
+                    invitationsRes
+                        .filter((invite) => invite.status === "Pending" && invite.event?.eventId)
+                        .map((invite) => ({
+                            id: invite.invitationId,
+                            eventId: invite.event.eventId, // Ensure eventId exists
+                            senderName: invite.sender?.name ?? "Organizer",
+                            eventName: invite.event?.title ?? "Event",
+                            eventDate: formatDate(invite.event?.eventDate),
+                            status: invite.status,
+                        }))
                 );
 
                 const events = searchRes?.events ?? [];
@@ -151,14 +157,58 @@ export default function Dashboard() {
         }
     };
 
-    const handleInvitationResponse = async (invitationId, status) => {
+    const handleInvitationResponse = async (invitationId, status, eventId) => {
+        if (!eventId) {
+            alert("Error: Event ID is missing. Please try again.");
+            return;
+        }
+
+        // Set loading state for this specific invitation
+        setRespondingInvitationId(invitationId);
+
         try {
+            // Step 1: Respond to the invitation
             await respondToInvitationApi(invitationId, status);
+            
+            // Remove the invitation from the list immediately for better UX
             setInvitations((prev) =>
                 prev.filter((invite) => invite.id !== invitationId)
             );
+
+            // Step 2: When accepting, create a registration so it shows in "Your Events"
+            if (status === "Accepted") {
+                try {
+                    // The backend adds user as EventAttendee, but we need a Registration for "Your Events" table
+                    // Create registration with "Going" status
+                    await respondToEventApi(eventId, "Going");
+                    
+                    // Reload registrations to show the new event in "Your Events"
+                    const registrationsRes = await fetchUserRegistrations();
+                    setRegistrations(
+                        registrationsRes.map((registration) => ({
+                            registrationId: registration.registrationId,
+                            eventId: registration.event?.eventId ?? registration.eventId,
+                            event: registration.event?.title ?? "Untitled Event",
+                            date: formatDate(registration.event?.eventDate),
+                            time: "—",
+                            status: normalizeStatus(registration.responseStatus ?? "Maybe"),
+                        }))
+                    );
+                } catch (registrationErr) {
+                    // If registration fails, still show success for invitation acceptance
+                    console.error("Failed to create registration after accepting invite:", registrationErr);
+                    // The user is still added as attendee by the backend, so this is not critical
+                    // But we should inform them
+                    alert("Invitation accepted! However, there was an issue adding it to your events list. Please refresh the page.");
+                }
+            }
+            // For rejection, we just remove it from the list - no additional action needed
         } catch (err) {
-            alert(err.response?.data?.message || "Unable to update invitation.");
+            const errorMessage = err.response?.data?.error || err.response?.data?.message || "Unable to update invitation. Please try again.";
+            alert(errorMessage);
+            // Don't remove from list if there was an error - it will stay visible
+        } finally {
+            setRespondingInvitationId(null);
         }
     };
 
@@ -172,43 +222,81 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-10">
-            <div className="flex justify-between items-center mb-6">
-                {/* Heading */}
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-6 md:p-10">
+            {/* Header Section */}
+            <div className="mb-10">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                
+                {/* Title + Subtitle */}
+                <div className="flex items-center gap-4">
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
                     Dashboard
                 </h1>
 
-                {/* Button */}
-                <button onClick={handleCreateEvent}
-                        className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
-                    + New Event
+                {/* New Event Button (now beside Dashboard) */}
+                <button
+                    onClick={handleCreateEvent}
+                    className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition duration-150 shadow-md hover:shadow-lg flex items-center gap-2 text-sm sm:text-base"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    New Event
                 </button>
+                </div>
+
+                {/* Subtitle moved down on large screens */}
+                <p className="text-gray-600 dark:text-gray-400 mt-3 sm:mt-0">
+                Welcome back! Here's what's happening.
+                </p>
+
+            </div>
             </div>
 
+
             {/* ---  events Section --- */}
-            <div className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4 text-left text-gray-800 dark:text-gray-100">
-                    Your Events
-                </h2>
+            <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                        <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Your Events
+                    </h2>
+                </div>
                 {error && (
-                    <p className="text-sm text-red-500 mb-4">{error}</p>
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                    </div>
                 )}
-                <EventTable data={registrations} onStatusChange={handleStatusUpdate} loading={loading} />
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <EventTable data={registrations} onStatusChange={handleStatusUpdate} loading={loading} />
+                </div>
             </div>
 
             {/* --- Upcoming Events Section (Card List) --- */}
             <div className="mb-10">
-                <h2 className="text-2xl font-semibold mb-6 text-left text-gray-800 dark:text-gray-100">
-                    Upcoming Events
-                </h2>
-                <EventCardList data={upcomingEvents} isLoading={loading} />
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Upcoming Events
+                    </h2>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+                    <EventCardList data={upcomingEvents} isLoading={loading} />
+                </div>
 
                 {/* 2. Add the "See More" button */}
                 <div className="text-center mt-6">
                     <button
                         onClick={handleSeeMore}
-                        className="px-6 py-2 text-md font-medium text-indigo-600 dark:text-indigo-400 bg-transparent border border-indigo-600 dark:border-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-800 transition duration-150"
+                        className="px-6 py-3 text-md font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition duration-150 shadow-md hover:shadow-lg"
                     >
                         See All Upcoming Events
                     </button>
@@ -218,19 +306,45 @@ export default function Dashboard() {
             <div className="mb-8">
                 {/* Content for Invites */}
                 <div className="mb-10">
-                    <h2 className="text-2xl font-semibold mb-4 text-left text-gray-800 dark:text-gray-100">
-                        Invites
-                    </h2>
-                    {/* Render the InviteCard component here */}
-                    <InviteCard data={invitations} onRespond={handleInvitationResponse} />
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+                            <svg className="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                            Invites
+                        </h2>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+                        <InviteCard 
+                            data={invitations} 
+                            onRespond={handleInvitationResponse}
+                            respondingInvitationId={respondingInvitationId}
+                        />
+                    </div>
                 </div>
             </div>
 
             <div className="mb-10">
-                <h2 className="text-2xl font-semibold mb-4 text-left text-gray-800 dark:text-gray-100">
-                    Events Organized by You
-                </h2>
-                <ActionsTable data={organizedEvents} />
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Events Organized by You
+                    </h2>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <ActionsTable 
+                        data={organizedEvents} 
+                        onDelete={(deletedId) => {
+                            setOrganizedEvents((prev) => prev.filter((event) => event.id !== deletedId));
+                        }}
+                    />
+                </div>
             </div>
         </div>
     );

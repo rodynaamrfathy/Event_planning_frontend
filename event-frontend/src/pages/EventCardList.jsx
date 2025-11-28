@@ -15,7 +15,7 @@ const EventCard = ({ event }) => {
     const buttonClass = "bg-indigo-600 hover:bg-indigo-700 text-white";
 
     return (
-        <div className="flex flex-col md:flex-row gap-6 mb-8 border-b border-gray-200 dark:border-gray-700 pb-8">
+        <div className="flex flex-col md:flex-row gap-6 mb-8 p-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all duration-200">
 
             {/* Left Section: Text Content */}
             <div className="flex-1">
@@ -38,17 +38,17 @@ const EventCard = ({ event }) => {
 
                 {/* Action Button: Now always navigates to details */}
                 <button
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition duration-150 ${buttonClass}`}
+                    className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition duration-150 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${buttonClass}`}
                     onClick={handleAction}
                 >
-                    View Details
+                    View Details →
                 </button>
             </div>
 
             {/* Right Section: Image Card */}
-            <div className="w-full md:w-60 h-40 flex-shrink-0 rounded-lg overflow-hidden shadow-lg bg-gray-700 dark:bg-gray-900">
+            <div className="w-full md:w-60 h-40 flex-shrink-0 rounded-xl overflow-hidden shadow-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700">
                 {/* Placeholder for Image */}
-                <div className="w-full h-full flex items-center justify-center text-4xl font-extrabold text-white opacity-40">
+                <div className="w-full h-full flex items-center justify-center text-4xl font-extrabold text-white opacity-90">
                     {(event.category || 'EVT').slice(0, 3).toUpperCase()}
                 </div>
             </div>
